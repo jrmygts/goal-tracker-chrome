@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whimdoughs🥖</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Whimdoughs🥖</h1>
+    
+    <div id="current-goal-container">
+      <h2>Current Goal</h2>
+      <div id="current-goal">No goal set</div>
+      <div id="timer-display">00:00:00</div>
+      <div class="button-container">
+        <button id="complete-goal-btn" disabled>Complete Goal</button>
+        <button id="pause-resume-btn" disabled>Pause</button>
+      </div>
+    </div>
+    
+    <div id="set-goal-container">
+      <h2>Set New Goal</h2>
+      <input type="text" id="goal-input" placeholder="Enter your goal...">
+      <button id="set-goal-btn">Set Goal</button>
+    </div>
+    
+    <div id="history-container">
+      <h2>Recent Goals</h2>
+      <ul id="goal-history"></ul>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

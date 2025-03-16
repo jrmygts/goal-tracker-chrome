@@ -1,0 +1,132 @@
+/* Content script styles */
+.goal-tracker-monitor {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 250px;
+  background-color: rgba(44, 62, 80, 0.85);
+  color: white;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  z-index: 2147483647;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s, transform 0.3s;
+  backdrop-filter: blur(5px);
+}
+
+.goal-tracker-monitor.minimized {
+  transform: translateY(calc(100% - 40px));
+}
+
+.goal-tracker-monitor.hidden {
+  opacity: 0.2;
+}
+
+.goal-tracker-monitor:hover {
+  opacity: 1;
+}
+
+.goal-tracker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: move;
+}
+
+.goal-tracker-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin: 0;
+}
+
+.goal-tracker-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.goal-tracker-control {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
+
+.goal-tracker-control:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.goal-tracker-goal {
+  font-size: 14px;
+  margin-bottom: 8px;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.goal-tracker-timer {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px 0;
+  font-family: monospace;
+}
+
+.goal-tracker-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.goal-tracker-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.goal-tracker-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.goal-tracker-button.complete {
+  background-color: rgba(46, 204, 113, 0.6);
+}
+
+.goal-tracker-button.complete:hover {
+  background-color: rgba(46, 204, 113, 0.8);
+}
+
+.goal-tracker-no-goal {
+  text-align: center;
+  font-size: 13px;
+  margin: 10px 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.goal-tracker-set-goal-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  box-sizing: border-box;
+}
+
+.goal-tracker-set-goal-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
