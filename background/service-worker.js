@@ -229,30 +229,51 @@ function broadcastTimerState() {
   const elapsedTime = calculateElapsedTime();
   const formattedTime = formatTime(elapsedTime);
   
+  // Create the message payload
+  const messageData = {
+    action: 'timerUpdate',
+    data: {
+      currentGoal,
+      timerRunning,
+      elapsedTime,
+      formattedTime
+    }
+  };
+  
+  // Log the state being broadcast (for debugging)
+  console.log('Broadcasting timer state:', messageData);
+  
+  // Query for all tabs
   chrome.tabs.query({}, (tabs) => {
+    // Send to each tab
     tabs.forEach(tab => {
       try {
-        chrome.tabs.sendMessage(tab.id, {
-          action: 'timerUpdate',
-          data: {
-            currentGoal,
-            timerRunning,
-            elapsedTime,
-            formattedTime
-          }
-        }).catch(err => {
-          // Ignore errors from tabs that can't receive messages
-          // This is common in Manifest V3 when sending to special pages
-        });
+        chrome.tabs.sendMessage(tab.id, messageData)
+          .catch(err => {
+            // This is expected for some special pages
+            console.debug(`Could not send to tab ${tab.id} (${tab.url})`);
+          });
       } catch (error) {
         // Ignore errors from tabs that can't receive messages
+        console.debug(`Error sending to tab ${tab.id}:`, error);
       }
     });
   });
+  
+  // Also broadcast via runtime for pages that might not be caught by tabs query
+  // This helps with new tab pages and popups
+  chrome.runtime.sendMessage(messageData)
+    .catch(err => {
+      // This error is expected and can be ignored
+      console.debug('Runtime message broadcast error (expected):', err);
+    });
 }
 
 // Handle messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Log incoming messages (for debugging)
+  console.log('Service worker received message:', message, 'from:', sender);
+  
   // Use a function to handle async operations with sendResponse
   const handleMessage = async () => {
     try {
@@ -288,17 +309,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return { success: true };
           
         case 'getTimerState':
-          return {
+          const state = {
             currentGoal,
             timerRunning,
             elapsedTime: calculateElapsedTime(),
             formattedTime: formatTime(calculateElapsedTime())
           };
+          console.log('Returning timer state:', state);
+          return state;
           
         case 'getCompletedGoals':
           // Get the latest completed goals from storage
           const data = await getGoalData(['completedGoals']);
           return { completedGoals: data.completedGoals || [] };
+          
+        case 'keepalive':
+          // This is just a ping to keep the service worker alive
+          console.debug('Received keepalive ping');
+          return { success: true };
           
         default:
           return { error: 'Unknown action' };
@@ -322,10 +350,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Listen for tab creation events
 chrome.tabs.onCreated.addListener((tab) => {
-  // We'll handle the new tab page separately in the newtab.html/js
+  console.log('New tab created:', tab);
+  
+  // Check if this is a new tab page
+  if (tab.pendingUrl === 'chrome://newtab/' || tab.url === 'chrome://newtab/') {
+    console.log('New tab page detected, will broadcast state when it loads');
+    
+    // We'll wait a moment for the page to load before broadcasting
+    setTimeout(() => {
+      broadcastTimerState();
+    }, 500);
+  }
+});
+
+// Also listen for tab updates to catch when a tab navigates to our new tab page
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only act if the tab has completed loading and it's our new tab page
+  if (changeInfo.status === 'complete' && 
+      (tab.url === chrome.runtime.getURL('popup/newtab.html') || 
+       tab.url?.startsWith(chrome.runtime.getURL('popup/newtab.html')))) {
+    console.log('New tab page loaded, broadcasting state');
+    broadcastTimerState();
+  }
 });
 
 // Initialize when service worker loads
+console.log('Service worker initializing');
 initializeState();
 
 // Add listener for when the service worker is about to be terminated

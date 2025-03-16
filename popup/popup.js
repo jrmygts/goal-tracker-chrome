@@ -12,35 +12,46 @@ document.addEventListener('DOMContentLoaded', function() {
   // Get current timer state from service worker
   async function updateTimerState() {
     try {
+      console.log('Popup: Requesting timer state');
       const response = await chrome.runtime.sendMessage({ action: 'getTimerState' });
+      console.log('Popup: Received timer state:', response);
       
       if (response) {
-        // Update goal display
-        if (response.currentGoal) {
-          currentGoalElement.textContent = response.currentGoal;
-          completeGoalBtn.disabled = false;
-          pauseResumeBtn.disabled = false;
-          
-          // Update pause/resume button text based on timer state
-          pauseResumeBtn.textContent = response.timerRunning ? 'Pause' : 'Resume';
-        } else {
-          currentGoalElement.textContent = 'No goal set';
-          completeGoalBtn.disabled = true;
-          pauseResumeBtn.disabled = true;
-        }
-        
-        // Update timer display
-        timerDisplayElement.textContent = response.formattedTime;
+        updateUIWithTimerState(response);
       }
     } catch (error) {
-      console.error('Error getting timer state:', error);
+      console.error('Popup: Error getting timer state:', error);
     }
+  }
+  
+  // Update UI with timer state data
+  function updateUIWithTimerState(data) {
+    console.log('Popup: Updating UI with timer state:', data);
+    
+    // Update goal display
+    if (data.currentGoal) {
+      currentGoalElement.textContent = data.currentGoal;
+      completeGoalBtn.disabled = false;
+      pauseResumeBtn.disabled = false;
+      
+      // Update pause/resume button text based on timer state
+      pauseResumeBtn.textContent = data.timerRunning ? 'Pause' : 'Resume';
+    } else {
+      currentGoalElement.textContent = 'No goal set';
+      completeGoalBtn.disabled = true;
+      pauseResumeBtn.disabled = true;
+    }
+    
+    // Update timer display
+    timerDisplayElement.textContent = data.formattedTime;
   }
   
   // Load goal history
   async function loadGoalHistory() {
     try {
+      console.log('Popup: Loading goal history');
       const response = await chrome.runtime.sendMessage({ action: 'getCompletedGoals' });
+      console.log('Popup: Received goal history:', response);
       
       if (response && response.completedGoals) {
         // Clear current history
@@ -86,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     } catch (error) {
-      console.error('Error loading goal history:', error);
+      console.error('Popup: Error loading goal history:', error);
     }
   }
   
@@ -96,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (goalText) {
       try {
+        console.log('Popup: Setting goal:', goalText);
         await chrome.runtime.sendMessage({
           action: 'setGoal',
           data: { goal: goalText }
@@ -106,8 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update UI
         updateTimerState();
+        loadGoalHistory();
       } catch (error) {
-        console.error('Error setting goal:', error);
+        console.error('Popup: Error setting goal:', error);
       }
     }
   }
@@ -115,13 +128,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Complete current goal
   async function completeGoal() {
     try {
+      console.log('Popup: Completing goal');
       await chrome.runtime.sendMessage({ action: 'completeGoal' });
       
       // Update UI
       updateTimerState();
       loadGoalHistory();
     } catch (error) {
-      console.error('Error completing goal:', error);
+      console.error('Popup: Error completing goal:', error);
     }
   }
   
@@ -130,14 +144,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const action = pauseResumeBtn.textContent === 'Pause' ? 'pauseTimer' : 'resumeTimer';
     
     try {
+      console.log(`Popup: ${action}`);
       await chrome.runtime.sendMessage({ action });
       
       // Update UI
       updateTimerState();
     } catch (error) {
-      console.error(`Error ${action}:`, error);
+      console.error(`Popup: Error ${action}:`, error);
     }
   }
+  
+  // Listen for timer updates from service worker
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Popup: Received message:', message);
+    
+    if (message.action === 'timerUpdate') {
+      updateUIWithTimerState(message.data);
+    }
+    
+    // Always return true for async response handling in Manifest V3
+    return true;
+  });
   
   // Add event listeners
   setGoalBtn.addEventListener('click', setGoal);
@@ -152,9 +179,11 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize UI
+  console.log('Popup: Initializing');
   updateTimerState();
   loadGoalHistory();
   
   // Set up periodic updates
   setInterval(updateTimerState, 1000);
 });
+

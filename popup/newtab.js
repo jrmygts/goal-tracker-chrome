@@ -16,34 +16,46 @@ document.addEventListener('DOMContentLoaded', function() {
   // Get current timer state from service worker
   async function updateTimerState() {
     try {
+      console.log('Newtab: Requesting timer state');
       const response = await chrome.runtime.sendMessage({ action: 'getTimerState' });
+      console.log('Newtab: Received timer state:', response);
       
       if (response) {
-        // Update goal display
-        if (response.currentGoal) {
-          currentGoalElement.textContent = response.currentGoal;
-          completeGoalBtn.disabled = false;
-          pauseResumeBtn.disabled = false;
-          hasActiveGoal = true;
-          
-          // Update pause/resume button text
-          pauseResumeBtn.textContent = response.timerRunning ? 'Pause' : 'Resume';
-        } else {
-          currentGoalElement.textContent = 'No goal set';
-          completeGoalBtn.disabled = true;
-          pauseResumeBtn.disabled = true;
-          hasActiveGoal = false;
-          
-          // Show goal modal if no active goal
-          showGoalModal();
-        }
-        
-        // Update timer display
-        timerDisplayElement.textContent = response.formattedTime;
+        updateUIWithTimerState(response);
       }
     } catch (error) {
-      console.error('Error getting timer state:', error);
+      console.error('Newtab: Error getting timer state:', error);
     }
+  }
+  
+  // Update UI with timer state data
+  function updateUIWithTimerState(data) {
+    console.log('Newtab: Updating UI with timer state:', data);
+    
+    // Update goal display
+    if (data.currentGoal) {
+      currentGoalElement.textContent = data.currentGoal;
+      completeGoalBtn.disabled = false;
+      pauseResumeBtn.disabled = false;
+      hasActiveGoal = true;
+      
+      // Update pause/resume button text
+      pauseResumeBtn.textContent = data.timerRunning ? 'Pause' : 'Resume';
+      
+      // Hide modal if it's showing
+      hideGoalModal();
+    } else {
+      currentGoalElement.textContent = 'No goal set';
+      completeGoalBtn.disabled = true;
+      pauseResumeBtn.disabled = true;
+      hasActiveGoal = false;
+      
+      // Show goal modal if no active goal
+      showGoalModal();
+    }
+    
+    // Update timer display
+    timerDisplayElement.textContent = data.formattedTime;
   }
   
   // Show goal setting modal
@@ -62,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!goalText) return;
     
     try {
+      console.log('Newtab: Setting goal:', goalText);
       await chrome.runtime.sendMessage({
         action: 'setGoal',
         data: { goal: goalText }
@@ -77,19 +90,20 @@ document.addEventListener('DOMContentLoaded', function() {
       goalInput.value = '';
       modalGoalInput.value = '';
     } catch (error) {
-      console.error('Error setting goal:', error);
+      console.error('Newtab: Error setting goal:', error);
     }
   }
   
   // Complete current goal
   async function completeGoal() {
     try {
+      console.log('Newtab: Completing goal');
       await chrome.runtime.sendMessage({ action: 'completeGoal' });
       
       // Update UI
       updateTimerState();
     } catch (error) {
-      console.error('Error completing goal:', error);
+      console.error('Newtab: Error completing goal:', error);
     }
   }
   
@@ -98,14 +112,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const action = pauseResumeBtn.textContent === 'Pause' ? 'pauseTimer' : 'resumeTimer';
     
     try {
+      console.log(`Newtab: ${action}`);
       await chrome.runtime.sendMessage({ action });
       
       // Update UI
       updateTimerState();
     } catch (error) {
-      console.error(`Error ${action}:`, error);
+      console.error(`Newtab: Error ${action}:`, error);
     }
   }
+  
+  // Listen for timer updates from service worker
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Newtab: Received message:', message);
+    
+    if (message.action === 'timerUpdate') {
+      updateUIWithTimerState(message.data);
+    }
+    
+    // Always return true for async response handling in Manifest V3
+    return true;
+  });
   
   // Add event listeners
   setGoalBtn.addEventListener('click', () => {
@@ -140,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize UI
+  console.log('Newtab: Initializing');
   updateTimerState();
   
   // Set up periodic updates
